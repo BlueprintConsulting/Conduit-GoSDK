@@ -13,12 +13,12 @@ tests: clean
 	go test --coverprofile=coverage.out ./...
 
 docker:
-	docker build -t conduit-client:latest . -f Dockerfile
-	docker run -it --env CONDUIT_SERVER=${CONDUIT_SERVER} --env CONDUIT_TOKEN=${CONDUIT_TOKEN} conduit-client:latest
+	docker build -t conduit-gosdk:latest . -f Dockerfile
+	docker run -it --env CONDUIT_SERVER=${CONDUIT_SERVER} --env CONDUIT_TOKEN=${CONDUIT_TOKEN} conduit-gosdk:latest
 
 run: build
 	@echo Running program
-	CONDUIT_SERVER=${CONDUIT_SERVER} CONDUIT_TOKEN=${CONDUIT_TOKEN} ./conduit-client
+	CONDUIT_SERVER=${CONDUIT_SERVER} CONDUIT_TOKEN=${CONDUIT_TOKEN} ./Conduit-GoSDK
 
 build: clean
 	@echo Running build command

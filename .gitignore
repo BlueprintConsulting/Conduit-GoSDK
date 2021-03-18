@@ -1,4 +1,4 @@
 .serverless
 coverage.out
 .idea/
-conduit-client
+Conduit-GoSDK

@@ -4,4 +4,4 @@ RUN mkdir /app
 ADD . /app/
 WORKDIR /app
 RUN make build
-CMD ["./conduit-client"]
+CMD ["./Conduit-GoSDK"]

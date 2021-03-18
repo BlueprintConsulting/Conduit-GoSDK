@@ -8,7 +8,7 @@ import (
 	"log"
 	"math/rand"
 	"time"
-	conduitclient "conduit-client/conduit"
+	conduitclient "Conduit-GoSDK/conduit"
 )
 
 func initConfig() (err error) {
