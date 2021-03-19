@@ -1,4 +1,4 @@
-module Conduit-GoSDK
+module github.com/BlueprintConsulting/Conduit-GoSDK
 
 go 1.14
 
