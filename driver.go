@@ -45,8 +45,13 @@ func main() {
 		client := conduitclient.NewClient(
 			viper.GetString("CONDUIT_SERVER"),
 			viper.GetString("CONDUIT_TOKEN"))
-		d := client.GetDatabases()
-		d.Print()
+		fmt.Print(client)
+		//d := client.GetDatabases()
+		//d.Print()
+		//t := client.GetTables("sql_synapse_flights")
+		//t.Print()
+		//s := client.GetTableSchema("sql_synapse_flights", "TransStats___vw_airport_parsed")
+		//s.Print()
 	} else {
 		log.Fatalln(err.Error())
 	}
