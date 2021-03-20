@@ -56,6 +56,42 @@ type ConduitClient struct {
 	ConduitToken string
 }
 
+type QueryResultStruct struct {
+	QueryId string `json:"queryId"`
+	Status string `json:"status"`
+	Message string `json:"message"`
+	RawData struct {
+		HasNext bool `json:"hasNext"`
+		HasPrevious bool `json:"hasPrevious"`
+		Columns *json.RawMessage `json:"columns"`
+		Rows *json.RawMessage `json:"rows"`
+	} `json:"data"`
+	ParsedColumns []string
+	ParsedRows []map[string]interface{}
+}
+func UnmarshalJsonToQueryResult(payload string) QueryResultStruct {
+	qrs := QueryResultStruct{}
+	json.Unmarshal([]byte(payload), &qrs)
+	//column processing
+	json.Unmarshal(*qrs.RawData.Columns, &qrs.ParsedColumns)
+	//row processing
+	var rows []json.RawMessage
+	json.Unmarshal(*qrs.RawData.Rows, &rows)
+	for _, value := range rows {
+		var objmap map[string]interface{}
+		json.Unmarshal(value, &objmap)
+		qrs.ParsedRows = append(qrs.ParsedRows, objmap)
+	}
+	return qrs
+}
+type QueryStruct struct {
+	Server string
+	Token string
+	SQLString string
+	WindowSize int
+	Timeout int
+	Offset int
+}
 func NewClient(conduitServer, conduitToken string) *ConduitClient {
 	if len(conduitServer) == 0 || len(conduitToken) == 0 {
 		log.Fatal("You need to set CONDUIT_SERVER and CONDUIT_TOKEN somewhere")

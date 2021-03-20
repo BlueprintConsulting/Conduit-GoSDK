@@ -46,12 +46,6 @@ func main() {
 			viper.GetString("CONDUIT_SERVER"),
 			viper.GetString("CONDUIT_TOKEN"))
 		fmt.Print(client)
-		//d := client.GetDatabases()
-		//d.Print()
-		//t := client.GetTables("sql_synapse_flights")
-		//t.Print()
-		//s := client.GetTableSchema("sql_synapse_flights", "TransStats___vw_airport_parsed")
-		//s.Print()
 	} else {
 		log.Fatalln(err.Error())
 	}
