@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
+	conduitclient "github.com/BlueprintConsulting/Conduit-GoSDK/conduit"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"log"
 	"math/rand"
 	"time"
-	conduitclient "github.com/BlueprintConsulting/Conduit-GoSDK/conduit"
 )
 
 func initConfig() (err error) {
@@ -45,7 +45,22 @@ func main() {
 		client := conduitclient.NewClient(
 			viper.GetString("CONDUIT_SERVER"),
 			viper.GetString("CONDUIT_TOKEN"))
-		fmt.Print(client)
+		client.Print()
+		//dbs := client.GetDatabases()
+		//dbs.Print()
+		//tables := client.GetTables("oracle_flights")
+		//tables.Print()
+		//err = client.ExecuteQuery("SELECT * FROM `oracle_flights`.`PDBADMIN___FLIGHTS` ORDER BY TAIL_NUMBER", 10000, 100)
+		//if err != nil {
+		//	log.Fatalf(err.Error())
+		//} else {
+		//	fmt.Print("-----")
+		//	for _, v := range client.Query.QueryResults {
+		//		fmt.Print(v.ParsedRows)
+		//	}
+		//}
+		tbls := client.GetTableSchema("oracle_flights", "PDBADMIN___FLIGHTS")
+		tbls.Print()
 	} else {
 		log.Fatalln(err.Error())
 	}
