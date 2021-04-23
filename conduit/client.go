@@ -93,25 +93,23 @@ func UnmarshalJsonToQueryResult(payload string) QueryResultStruct {
 }
 type QueryStruct struct {
 	SQLString string
-	WindowSize int
+	PageSize int
 	Timeout int
-	Offset int
 	StartTime time.Time
 	ActiveQueryId string
 	ActiveQueryStatus string
 	QueryResults []QueryResultStruct
 }
-func NewQuery(sqlString string, windowSize, timeout int) QueryStruct {
-	MaxWindowSize := 1000
+func NewQuery(sqlString string, pageSize, timeout int) QueryStruct {
+	MaxPageSize := 1000
 	q := QueryStruct{
 		SQLString:     sqlString,
 		Timeout:       timeout,
-		Offset:        0,
 	}
-	if windowSize < MaxWindowSize {
-		q.WindowSize = windowSize
+	if pageSize < MaxPageSize {
+		q.PageSize = pageSize
 	} else {
-		q.WindowSize = MaxWindowSize
+		q.PageSize = MaxPageSize
 	}
 	if timeout == 0 {
 		q.Timeout = 30
@@ -143,7 +141,7 @@ func (c *ConduitClient) CancelQuery() bool {
 	}
 	cancelled := new(CancelStruct)
 
-	err := c.GetOnTheWire(fmt.Sprintf("/cancel?queryId=%v", c.Query.ActiveQueryId), cancelled)
+	err := c.GetOnTheWire(fmt.Sprintf("/query/cancel?queryId=%v", c.Query.ActiveQueryId), cancelled)
 	fmt.Println(cancelled)
 	if err != nil {
 		log.Fatalf("Error on the wire: %v", err.Error())
@@ -163,12 +161,11 @@ func (c *ConduitClient) Execute() error {
 		return nil
 	}
 	httpClient := &http.Client{}
-	formedUrl := fmt.Sprintf("https://%v/query/execute", c.ConduitServer)
+	formedUrl := fmt.Sprintf("https://%v/api/query/execute", c.ConduitServer)
 	reqBody, err := json.Marshal(map[string]interface{}{
 		"queryId": nil,
 		"query": c.Query.SQLString,
-		"offset": c.Query.Offset,
-		"limit": c.Query.WindowSize,
+		"pageSize": c.Query.PageSize,
 	})
 	if err != nil {
 		log.Printf("Could not marshal body for POSTing query: %v", err.Error())
@@ -207,11 +204,10 @@ func (c *ConduitClient) ProcessQueryResult(response *http.Response) error {
 	}
 	c.Query.ActiveQueryId = qrs.QueryId
 	c.Query.ActiveQueryStatus = qrs.Status
-	if qrs.Status == "Finished" {
+	if qrs.Status == "Finished" || qrs.Status == "ResultsReady" {
 		c.Query.QueryResults = append(c.Query.QueryResults, qrs)
 		if qrs.RawData.HasNext {
 			log.Printf("Query is finished, but has more, so paging...")
-			c.Query.Offset = c.Query.Offset + c.Query.WindowSize
 			c.Query.Print()
 			c.Execute()
 		}
@@ -220,7 +216,8 @@ func (c *ConduitClient) ProcessQueryResult(response *http.Response) error {
 		log.Printf("Query is Running, need to poll for completion...")
 		c.CheckQuery()
 	} else {
-		return errors.New(fmt.Sprintf("Query isn't running or finished. %v", c.Query))
+
+		return errors.New(fmt.Sprintf("Query isn't running or finished. Status: %v. Query: %v", qrs.Status, c.Query))
 	}
 	return nil
 
@@ -230,7 +227,7 @@ func (c *ConduitClient) CheckQuery() error {
 		c.CancelQuery()
 		return nil
 	}
-	url := fmt.Sprintf("https://%v/query/execute/%v/result", c.ConduitServer, c.Query.ActiveQueryId)
+	url := fmt.Sprintf("https://%v/api/query/execute/%v/result", c.ConduitServer, c.Query.ActiveQueryId)
 	log.Printf(fmt.Sprintf("Getting URL: %v", url))
 	httpClient := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
@@ -260,8 +257,8 @@ func (c *ConduitClient) CheckQuery() error {
 
 }
 func (q *QueryStruct) Print() {
-	log.Printf("Query object is using offset %v, windowsize %v, with timeout %v, start time: %v",
-		q.Offset, q.WindowSize, q.Timeout, q.StartTime)
+	log.Printf("Query object is using pagesize %v, with timeout %v, start time: %v",
+		q.PageSize, q.Timeout, q.StartTime)
 }
 func NewClient(conduitServer, conduitToken string) *ConduitClient {
 	if len(conduitServer) == 0 || len(conduitToken) == 0 {
@@ -276,7 +273,7 @@ func (c *ConduitClient) Print() {
 	log.Printf("Conduit Client uses server: %v, with Token: <redacted>", c.ConduitServer)
 }
 func (c *ConduitClient) GetOnTheWire(endpoint string, target interface{}) (err error){
-	formedUrl := fmt.Sprintf("https://%s/query%s", c.ConduitServer, endpoint)
+	formedUrl := fmt.Sprintf("https://%s/api%s", c.ConduitServer, endpoint)
 	httpClient := &http.Client{}
 	req, err := http.NewRequest("GET", formedUrl, nil)
 	if err != nil {
@@ -307,7 +304,7 @@ func (c *ConduitClient) GetOnTheWire(endpoint string, target interface{}) (err e
 	return nil
 }
 func (c *ConduitClient) GetDatabases() *DatabasesStruct {
-	curlstring := "curl -X GET \"https://$CONDUIT_SERVER/query/metadata/databases\" -H  \"accept: application/json\" -H \"Authorization: Bearer $CONDUIT_TOKEN\""
+	curlstring := "curl -X GET \"https://$CONDUIT_SERVER/api/metadata/databases\" -H  \"accept: application/json\" -H \"Authorization: Bearer $CONDUIT_TOKEN\""
 	databases := new(DatabasesStruct)
 	err := c.GetOnTheWire("/metadata/databases", databases)
 	if err != nil {
@@ -316,8 +313,8 @@ func (c *ConduitClient) GetDatabases() *DatabasesStruct {
 	return databases
 }
 func (c *ConduitClient) GetTables(database string) *TablesStruct {
-	curlstring := fmt.Sprintf("curl -X GET \"https://$CONDUIT_SERVER/query/metadata/databases/%s/tables\" -H  \"accept: application/json\" -H \"Authorization: Bearer $CONDUIT_TOKEN\"", database)
-	//log.Print(curlstring)
+	curlstring := fmt.Sprintf("curl -X GET \"https://$CONDUIT_SERVER/api/metadata/databases/%s/tables\" -H  \"accept: application/json\" -H \"Authorization: Bearer $CONDUIT_TOKEN\"", database)
+	log.Print(curlstring)
 	tables := new(TablesStruct)
 	err := c.GetOnTheWire(fmt.Sprintf("/metadata/databases/%s/tables",database), tables)
 	if err != nil {
@@ -326,7 +323,7 @@ func (c *ConduitClient) GetTables(database string) *TablesStruct {
 	return tables
 }
 func (c *ConduitClient) GetTableSchema(database, table string) *TableSchemaStruct {
-	curlstring := fmt.Sprintf("curl -X GET \"https://$CONDUIT_SERVER/query/metadata/databases/%s/tables/%s/schema\" -H  \"accept: application/json\" -H \"Authorization: Bearer $CONDUIT_TOKEN\"", database, table)
+	curlstring := fmt.Sprintf("curl -X GET \"https://$CONDUIT_SERVER/api/metadata/databases/%s/tables/%s/schema\" -H  \"accept: application/json\" -H \"Authorization: Bearer $CONDUIT_TOKEN\"", database, table)
 	tableSchema := new(TableSchemaStruct)
 	tableSchema.Database = database
 	tableSchema.Table = table

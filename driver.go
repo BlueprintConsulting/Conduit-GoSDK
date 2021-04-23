@@ -48,9 +48,9 @@ func main() {
 		client.Print()
 		//dbs := client.GetDatabases()
 		//dbs.Print()
-		//tables := client.GetTables("oracle_flights")
+		//tables := client.GetTables("dynamics365_crm")
 		//tables.Print()
-		//err = client.ExecuteQuery("SELECT * FROM `oracle_flights`.`PDBADMIN___FLIGHTS` ORDER BY TAIL_NUMBER", 10000, 100)
+		//err = client.ExecuteQuery("SELECT * FROM `oracle_flights`.`PDBADMIN___FLIGHTS` LIMIT 100", 10000, 10)
 		//if err != nil {
 		//	log.Fatalf(err.Error())
 		//} else {
@@ -59,8 +59,8 @@ func main() {
 		//		fmt.Print(v.ParsedRows)
 		//	}
 		//}
-		tbls := client.GetTableSchema("oracle_flights", "PDBADMIN___FLIGHTS")
-		tbls.Print()
+		//tbls := client.GetTableSchema("oracle_flights", "PDBADMIN___FLIGHTS")
+		//tbls.Print()
 	} else {
 		log.Fatalln(err.Error())
 	}
